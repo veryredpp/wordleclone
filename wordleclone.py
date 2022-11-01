@@ -1,6 +1,4 @@
 import requests
-import pprint
-import sys
 import time
 print("Welcome to the ghetto Wordle!")
 url = "https://thatwordleapi.azurewebsites.net/get/"
