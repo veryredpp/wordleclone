@@ -50,10 +50,19 @@ def main():
                 goodword = False
             elif goodword == True:
                 pass
-            
         print('\033[1A' + "" + '\033[K')
-        word_list = list(guess)
-        print(word_list)
+        guess_list = list(guess)
+        word_list = list(word)
+        for guessletter, wordletter, index in zip(guess_list,word_list,range(5)):
+            if guessletter == wordletter:
+                print("\033[42m" + str(guessletter) + "\033[m", end="")
+                guess_list[index] = 0
+                word_list[index] = 0
+            elif guessletter in word_list:
+                pass
+            else:
+                print(guessletter, end="")
+                
         
         count += 1
     for i in range(8):
