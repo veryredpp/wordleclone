@@ -1,12 +1,15 @@
 import requests
 import time
+import datetime
 print("Welcome to the ghetto Wordle!")
-url = "https://thatwordleapi.azurewebsites.net/get/"
+
+date = datetime.date.today()
+url = f"https://www.nytimes.com/svc/wordle/v2/{date:%Y-%m-%d}.json"
 alphabet = []
 for i in range(97,123):
     alphabet.append(chr(i))
     
-def checkLetters(guess):
+def check_letters(guess):
     for letter in guess:
         if letter not in alphabet:
             return False
@@ -14,18 +17,17 @@ def checkLetters(guess):
 
 def main():
     response = requests.get(url)
-    response = response.json()
-    while response['Status'] != 200:
+    response_content = response.json()
+    while response.status_code != 200:
         response = requests.get(url)
-        response = response.json()
+        response_content = response.json()
         print("API Status:", response['Status'])
         print("Trying again...")
     print("API Status: OK\n")
-    
-    word = response['Response']
-    print(word)
-    print(len(word)*"_")
-    
+
+    word = response_content['solution']
+    print(len(word) * "_")
+
     guess = ""
     count = 0
     while (guess != word) and (count != 6):
@@ -33,7 +35,7 @@ def main():
         print("\n")
         while goodword is False:
             guess = input('\033[1A' + "" + '\033[K').lower()
-        
+
             if len(guess) != 5:
                 print('\033[1A' + "Word length out of range." + '\033[K')
                 time.sleep(1)
@@ -41,9 +43,8 @@ def main():
                 goodword = False
             else:
                 goodword = True
-                
-        
-            if checkLetters(guess) is False:
+
+            if check_letters(guess) is False:
                 print('\033[1A' + "Invalid characters used." + '\033[K')
                 time.sleep(1)
                 print('\033[1A' + "" + '\033[K')
@@ -51,22 +52,38 @@ def main():
             elif goodword == True:
                 pass
         print('\033[1A' + "" + '\033[K')
-        guess_list = list(guess)
+
+        # Processing the guess and providing feedback
+        from collections import Counter
+
         word_list = list(word)
-        for guessletter, wordletter, index in zip(guess_list,word_list,range(5)):
+        guess_list = list(guess)
+
+        # Prepare counts of each letter in the word
+        word_counts = Counter(word_list)
+        output = [""] * len(guess_list)  # Initialize an output list of the same length as the word
+
+        # First pass for green (correct positions)
+        for index, (guessletter, wordletter) in enumerate(zip(guess_list, word_list)):
             if guessletter == wordletter:
-                print("\033[42m" + str(guessletter) + "\033[m", end="")
-                guess_list[index] = 0
-                word_list[index] = 0
-            elif guessletter in word_list:
-                pass
-            else:
-                print(guessletter, end="")
-                
-        
+                output[index] = "\033[42m" + guessletter + "\033[m"  # Green for correct position
+                word_counts[guessletter] -= 1  # Reduce count as this letter is "consumed"
+                guess_list[index] = None       # Mark as handled
+
+        # Second pass for yellow (correct letters, wrong positions)
+        for index, guessletter in enumerate(guess_list):
+            if guessletter:
+                if word_counts[guessletter] > 0:
+                    output[index] = "\033[43m" + guessletter + "\033[m"  # Yellow for correct letter
+                    word_counts[guessletter] -= 1  # Reduce count as this letter is "consumed"
+                else:
+                    output[index] = guessletter  # No match, print normally
+
+        # Combine the output list into a single string
+        print("".join(output))
+
         count += 1
-    for i in range(8):
-        print(f"\033[4{i}m{i}\033[m")
+
     
 if __name__ == "__main__":
     main()
